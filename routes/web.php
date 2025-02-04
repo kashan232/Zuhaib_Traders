@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Route;
 // pos start
 // Old Pos setup
 // Software deployed
+// Zuhaid Traders Done
 Route::get('/', function () {
     return view('welcome');
 });
