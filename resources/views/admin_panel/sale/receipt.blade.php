@@ -11,32 +11,46 @@
             margin: 0;
             padding: 0;
             font-size: 12px;
+            background-color: #f4f4f4;
         }
 
         .receipt-container {
             width: 100%;
-            max-width: 400px;
-            margin: auto;
-            padding: 10px;
-            border: 1px solid #000;
+            max-width: 450px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
             background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .receipt-header {
+            text-align: center;
+        }
+
+        .receipt-header img {
+            width: 80px;
+            margin-bottom: 10px;
         }
 
         h2 {
-            text-align: center;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
-            margin: 0;
+            margin: 5px 0;
+            color: #333;
         }
 
         .receipt-header p {
-            text-align: center;
             margin: 2px 0;
+            font-size: 12px;
+            color: #555;
         }
 
         .details {
-            margin-top: 10px;
+            margin: 15px 0;
             line-height: 1.6;
+            font-size: 13px;
         }
 
         .details p {
@@ -44,44 +58,45 @@
         }
 
         .details strong {
-            font-weight: bold;
+            color: #333;
         }
 
         table {
             width: 100%;
-            margin-top: 12px;
+            margin-top: 10px;
             font-size: 12px;
             border-collapse: collapse;
         }
 
-        th {
+        th, td {
+            padding: 6px;
             text-align: left;
-            border-bottom: 2px solid #000;
-            padding: 4px 0;
+            border-bottom: 1px solid #eee;
         }
 
-        .tbody tr td {
-            padding: 4px 0;
-            text-align: left;
-            border-bottom: 1px dashed #000;
+        th {
+            font-weight: bold;
+            background-color: #f9f9f9;
+            color: #333;
         }
 
         .totals td {
             font-weight: bold;
             text-align: right;
-            padding-top: 4px;
         }
 
         .receipt-footer {
             text-align: center;
-            margin-top: 10px;
+            margin-top: 20px;
             font-size: 12px;
+            color: #555;
         }
 
         .note {
             font-size: 13px;
             font-weight: bold;
-            margin-bottom: 5px;
+            color: #d9534f;
+            margin-bottom: 10px;
         }
 
         @media print {
@@ -91,8 +106,7 @@
 
             .receipt-container {
                 border: none;
-                width: auto;
-                max-width: none;
+                box-shadow: none;
                 margin: 0;
                 page-break-inside: avoid;
             }
@@ -104,6 +118,7 @@
     <div class="receipt-container">
         <!-- Receipt Header -->
         <div class="receipt-header">
+            <img src="../assets/admin/images/BB_logo.png" alt="Company Logo">
             <h2>Beauty Base Cosmetics</h2>
             <p><strong>Cash Memo</strong></p>
             <p><strong>Address:</strong> Resham Bazar</p>
@@ -123,11 +138,11 @@
                 <tr>
                     <th>Description</th>
                     <th>Qty</th>
-                    <th>Unit</th>
+                    <th>Rate</th>
                     <th>Total</th>
                 </tr>
             </thead>
-            <tbody class="tbody">
+            <tbody>
                 @foreach(json_decode($sale->item_name) as $key => $item)
                 <tr>
                     <td>{{ $item }}</td>
@@ -148,22 +163,8 @@
                 </tr>
                 <tr class="totals">
                     <td colspan="3">Net Total</td>
-                    <td>{{ $sale->Payable_amount }}</td>
-                </tr>
-                <tr class="totals">
-                    <td colspan="3">Cash Received</td>
-                    <td>{{ $sale->cash_received }}</td>
-                </tr>
-                <tr class="totals">
-                    <td colspan="3">Change Returned</td>
-                    <td>{{ $sale->change_return }}</td>
-                </tr>
-
-                <tr class="totals">
-                    <td colspan="3">Net Total</td>
                     <td><strong>{{ $sale->Payable_amount }}</strong></td>
                 </tr>
-
                 <tr class="totals">
                     <td colspan="3">Previous Balance</td>
                     <td>{{ $previous_balance }}</td>
@@ -172,7 +173,10 @@
                     <td colspan="3">Closing Balance</td>
                     <td>{{ $closing_balance }}</td>
                 </tr>
-                
+                <tr class="totals">
+                    <td colspan="3">Cash Received</td>
+                    <td>{{ $sale->cash_received }}</td>
+                </tr>
             </tfoot>
         </table>
 

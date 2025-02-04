@@ -75,7 +75,6 @@ class SaleController extends Controller
         ]);
     }
 
-
     public function store_Sale(Request $request)
     {
         $invoiceNo = Sale::generateInvoiceNo();
@@ -118,6 +117,7 @@ class SaleController extends Controller
             }
         }
 
+        // Get customer info from the concatenated string
         $customerInfo = explode('|', $request->input('customer_info'));
         if (count($customerInfo) < 2) {
             return redirect()->back()->with('error', 'Invalid customer information format.');
@@ -125,33 +125,49 @@ class SaleController extends Controller
 
         $customerId = $customerInfo[0];
         $customerName = $customerInfo[1];
+        // Prepare data for storage
+        $discount = (float) ($request->input('discount', 0));
+        $totalPrice = (float) $request->input('total_price', 0);
+        $netTotal = $totalPrice - $discount; // Calculate the net total amount
 
-        $netTotal = $totalPrice - $discount;
-
+        // Get the existing customer credit to retrieve previous balance
         $customerCredit = CustomerCredit::where('customerId', $customerId)->first();
 
-        $previousBalance = $customerCredit ? $customerCredit->closing_balance : 0;
-        $closingBalance = $previousBalance + $netTotal;
-
-        if ($cashReceived > 0) {
-            $closingBalance -= $cashReceived; // Deduct cash received from the closing balance
-        }
+        $previous_balance = $request->input('previous_balance');
+        $net_total = $request->input('net_total');
+        $closing_balance = $request->input('closing_balance');
+        // Initialize variables to hold balance details
+        $previousBalance = 0;
+        $closingBalance = 0;
 
         if ($customerCredit) {
-            $customerCredit->net_total = $netTotal;
-            $customerCredit->closing_balance = $closingBalance;
-            $customerCredit->previous_balance = $previousBalance;
+            // If customer credit exists, get the previous balance
+            $previousBalance = $customerCredit->previous_balance;
+
+            // Update previous balance to include the new sale's payable amount
+            $closingBalance = $previousBalance + $netTotal;
+
+            // Update existing credit
+            $customerCredit->net_total = $netTotal; // Store the net total from the current sale
+            $customerCredit->closing_balance = $closingBalance; // Closing balance is now the updated previous balance
+            $customerCredit->previous_balance = $closingBalance; // Update to the new previous balance
             $customerCredit->save();
         } else {
+            // Create new credit entry for the customer
             CustomerCredit::create([
                 'customerId' => $customerId,
                 'customer_name' => $customerName,
-                'previous_balance' => $previousBalance,
-                'net_total' => $netTotal,
-                'closing_balance' => $closingBalance,
+                'previous_balance' => $netTotal, // Set previous balance to the net total for the first sale
+                'net_total' => $netTotal, // This is the first sale's amount
+                'closing_balance' => $netTotal, // Closing balance for first entry
             ]);
+
+            // Set the balances for the first entry
+            $previousBalance = 0; // No previous balance exists for new customers
+            $closingBalance = $netTotal; // This will be the closing balance
         }
 
+        // Step 2: Proceed to save the sale
         $saleData = [
             'userid' => $userId,
             'user_type' => $usertype,
@@ -168,13 +184,14 @@ class SaleController extends Controller
             'note' => $request->input('note', ''),
             'total_price' => $totalPrice,
             'discount' => $discount,
-            'Payable_amount' => $netTotal,
+            'Payable_amount' => $totalPrice - $discount,
             'cash_received' => $cashReceived,
             'change_return' => $changeToReturn,
         ];
 
         $sale = Sale::create($saleData);
 
+        // Step 3: Deduct stock after successfully saving the sale
         foreach ($itemNames as $key => $item_name) {
             $item_category = $itemCategories[$key] ?? '';
             $quantity = $quantities[$key] ?? 0;
@@ -191,11 +208,14 @@ class SaleController extends Controller
 
         return redirect()->route('sale-receipt', [
             'id' => $sale->id,
-            'previous_balance' => $previousBalance,
-            'closing_balance' => $closingBalance,
-            'net_total' => $netTotal,
-        ])->with('success', 'Sale recorded successfully. Redirecting to receipt...');
+            'previous_balance' => $previousBalance, // Ensure this is the correct variable name
+            'closing_balance' => $closingBalance, // Ensure this is the correct variable name
+            'net_total' => $netTotal // Include this if needed
+        ])
+            ->with('success', 'Sale recorded successfully. Redirecting to receipt...');
     }
+
+
 
 
     // public function store_Sale(Request $request)
@@ -240,59 +260,40 @@ class SaleController extends Controller
     //         }
     //     }
 
-    //     // Get customer info from the concatenated string
     //     $customerInfo = explode('|', $request->input('customer_info'));
     //     if (count($customerInfo) < 2) {
     //         return redirect()->back()->with('error', 'Invalid customer information format.');
     //     }
 
-    //     $customerId = $customerInfo[0]; // Customer ID
-    //     $customerName = $customerInfo[1]; // Customer Name
-    //     // dd($customerName);
+    //     $customerId = $customerInfo[0];
+    //     $customerName = $customerInfo[1];
 
-    //     // Prepare data for storage
-    //     $discount = (float) ($request->input('discount', 0));
-    //     $totalPrice = (float) $request->input('total_price', 0);
-    //     $netTotal = $totalPrice - $discount; // Calculate the net total amount
+    //     $netTotal = $totalPrice - $discount;
 
-    //     // Get the existing customer credit to retrieve previous balance
     //     $customerCredit = CustomerCredit::where('customerId', $customerId)->first();
 
-    //     $previous_balance = $request->input('previous_balance');
-    //     $net_total = $request->input('net_total');
-    //     $closing_balance = $request->input('closing_balance');
-    //     // Initialize variables to hold balance details
-    //     $previousBalance = 0;
-    //     $closingBalance = 0;
+    //     $previousBalance = $customerCredit ? $customerCredit->closing_balance : 0;
+    //     $closingBalance = $previousBalance + $netTotal;
+
+    //     if ($cashReceived > 0) {
+    //         $closingBalance -= $cashReceived; // Deduct cash received from the closing balance
+    //     }
 
     //     if ($customerCredit) {
-    //         // If customer credit exists, get the previous balance
-    //         $previousBalance = $customerCredit->previous_balance;
-
-    //         // Update previous balance to include the new sale's payable amount
-    //         $closingBalance = $previousBalance + $netTotal;
-
-    //         // Update existing credit
-    //         $customerCredit->net_total = $netTotal; // Store the net total from the current sale
-    //         $customerCredit->closing_balance = $closingBalance; // Closing balance is now the updated previous balance
-    //         $customerCredit->previous_balance = $closingBalance; // Update to the new previous balance
+    //         $customerCredit->net_total = $netTotal;
+    //         $customerCredit->closing_balance = $closingBalance;
+    //         $customerCredit->previous_balance = $previousBalance;
     //         $customerCredit->save();
     //     } else {
-    //         // Create new credit entry for the customer
     //         CustomerCredit::create([
     //             'customerId' => $customerId,
     //             'customer_name' => $customerName,
-    //             'previous_balance' => $netTotal, // Set previous balance to the net total for the first sale
-    //             'net_total' => $netTotal, // This is the first sale's amount
-    //             'closing_balance' => $netTotal, // Closing balance for first entry
+    //             'previous_balance' => $previousBalance,
+    //             'net_total' => $netTotal,
+    //             'closing_balance' => $closingBalance,
     //         ]);
-
-    //         // Set the balances for the first entry
-    //         $previousBalance = 0; // No previous balance exists for new customers
-    //         $closingBalance = $netTotal; // This will be the closing balance
     //     }
 
-    //     // Step 2: Proceed to save the sale
     //     $saleData = [
     //         'userid' => $userId,
     //         'user_type' => $usertype,
@@ -309,14 +310,13 @@ class SaleController extends Controller
     //         'note' => $request->input('note', ''),
     //         'total_price' => $totalPrice,
     //         'discount' => $discount,
-    //         'Payable_amount' => $totalPrice - $discount,
+    //         'Payable_amount' => $netTotal,
     //         'cash_received' => $cashReceived,
     //         'change_return' => $changeToReturn,
     //     ];
 
     //     $sale = Sale::create($saleData);
 
-    //     // Step 3: Deduct stock after successfully saving the sale
     //     foreach ($itemNames as $key => $item_name) {
     //         $item_category = $itemCategories[$key] ?? '';
     //         $quantity = $quantities[$key] ?? 0;
@@ -333,12 +333,12 @@ class SaleController extends Controller
 
     //     return redirect()->route('sale-receipt', [
     //         'id' => $sale->id,
-    //         'previous_balance' => $previousBalance, // Ensure this is the correct variable name
-    //         'closing_balance' => $closingBalance, // Ensure this is the correct variable name
-    //         'net_total' => $netTotal // Include this if needed
-    //     ])
-    //         ->with('success', 'Sale recorded successfully. Redirecting to receipt...');
+    //         'previous_balance' => $previousBalance,
+    //         'closing_balance' => $closingBalance,
+    //         'net_total' => $netTotal,
+    //     ])->with('success', 'Sale recorded successfully. Redirecting to receipt...');
     // }
+
 
     public function all_sales()
     {

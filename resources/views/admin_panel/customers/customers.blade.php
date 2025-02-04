@@ -180,7 +180,7 @@
                                     <div class="form-group">
                                         <label>Customer Name</label>
                                         <input type="text" class="form-control" id="recovery_customer_name" readonly>
-                                        <input type="text" name="customer_id" id="recovery_customer_id">
+                                        <input type="hidden" name="customer_id" id="recovery_customer_id">
                                     </div>
                                     <div class="form-group">
                                         <label>Closing Balance</label>

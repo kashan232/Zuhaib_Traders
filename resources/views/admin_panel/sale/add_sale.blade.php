@@ -191,7 +191,7 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="col-sm-12">
+                                                <!-- <div class="col-sm-12">
                                                     <div class="form-group">
                                                         <label>Cash Received</label>
                                                         <div class="input-group">
@@ -199,7 +199,7 @@
                                                             <input type="number" name="cash_received" id="cashReceived" class="form-control">
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </div> -->
                                                 
                                                 <!-- Cash Payment Fields End -->
 
