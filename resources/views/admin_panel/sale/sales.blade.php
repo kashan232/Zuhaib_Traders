@@ -35,9 +35,7 @@
                                                 <th>Invoice No. | Date</th>
                                                 <th>Customer | Warehouse </th>
                                                 <th>Total Amount </th>
-                                                <th>Discount </th>
                                                 <th>Payable </th>
-                                                <th>Received </th>
                                                 <!-- <th>Recipt </th> -->
                                                 <th>Action</th>
                                             </tr>
@@ -63,14 +61,9 @@
 
                                                 </td>
                                                 <td>
-                                                    {{ $Sale->discount }}
-                                                </td>
-                                                <td>
                                                     <span class="fw-bold">{{ $Sale->Payable_amount }}</span>
                                                 </td>
-                                                <td>
-                                                    <span class="fw-bold">{{ $Sale->cash_received }}</span>
-                                                </td>
+                                              
                                                 <!-- <td>
                                                     <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="#"> <i class="la la-pen"></i> Edit</a>
                                                 </td> -->
@@ -81,7 +74,6 @@
                                                         </button>
                                                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                             <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="#"> <i class="la la-pen"></i> Edit</a>
-                                                            <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="#"> <i class="la la-eye"></i> View</a>
                                                             <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="{{ route('invoice.download', ['id' => $Sale->id]) }}"> <i class="la la-undo"></i> Download Invoice</a>
                                                             <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="{{ route('sale-receipt', ['id' => $Sale->id]) }}"> <i class="la la-print"></i> Print Receipt</a> <!-- New Print Receipt Link -->
                                                         </div>

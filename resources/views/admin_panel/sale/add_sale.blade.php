@@ -135,85 +135,105 @@
                                     </div>
 
                                     <div class="row">
-                                        <div class="col-md-8 col-sm-6">
+                                        <div class="col-12">
                                             <div class="form-group">
                                                 <label>Sale Note</label>
                                                 <textarea name="note" class="form-control"></textarea>
                                             </div>
                                         </div>
 
-                                        <div class="col-md-4 col-sm-6">
-                                            <div class="row">
-                                                <div class="col-sm-12">
-                                                    <div class="form-group">
-                                                        <label>Total Price</label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text">Pkr</span>
-                                                            <input type="number" name="total_price" class="form-control total_price" required readonly>
+                                        <div class="row">
+                                            <div class="col-md-3 col-sm-6">
+                                                <div class="form-group">
+                                                    <label>Total Price</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">Pkr</span>
+                                                        <input type="number" name="total_price" class="form-control total_price" required readonly>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 col-sm-6">
+                                                <div class="form-group">
+                                                    <label>Discount 1</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">%</span>
+                                                        <input type="number" id="discount_1" name="discount_1" class="form-control" step="any">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 col-sm-6">
+                                                <div class="form-group">
+                                                    <label>Discount 2</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">%</span>
+                                                        <input type="number" id="discount_2" name="discount_2" class="form-control" step="any">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 col-sm-6">
+                                                <div class="form-group">
+                                                    <label>Discount 3</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">%</span>
+                                                        <input type="number" id="discount_3" name="discount_3" class="form-control" step="any">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 col-sm-6">
+                                                <div class="form-group">
+                                                    <label>TO Calculation Type</label>
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="to_percentage" name="to_type" value="percentage" checked>
+                                                            <label class="form-check-label" for="to_percentage">Percentage</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="to_rupees" name="to_type" value="rupees">
+                                                            <label class="form-check-label" for="to_rupees">Rupees</label>
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                <div class="col-sm-12">
-                                                    <div class="form-group">
-                                                        <label>Discount</label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text">Pkr</span>
-                                                            <input type="number" id="discount" name="discount" class="form-control" step="any">
-                                                        </div>
+                                            <div class="col-md-3 col-sm-6">
+                                                <div class="form-group">
+                                                    <label>TO Value</label>
+                                                    <input type="number" id="to_value" name="to_value" class="form-control" step="any">
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 col-sm-6">
+                                                <div class="form-group">
+                                                    <label>Payable Amount</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">Pkr</span>
+                                                        <input type="number" name="payable_amount" class="form-control payable_amount" readonly>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                <div class="col-sm-12">
-                                                    <div class="form-group">
-                                                        <label>Payable Amount</label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text">Pkr</span>
-                                                            <input type="number" name="payable_amount" class="form-control payable_amount" readonly>
-                                                        </div>
+                                            <div class="col-md-3 col-sm-6">
+                                                <div class="form-group">
+                                                    <label>Previous Balance</label>
+                                                    <input type="text" class="form-control" id="previous_balance" name="previous_balance" readonly>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 col-sm-6">
+                                                <div class="form-group">
+                                                    <label>Closing Balance</label>
+                                                    <div class="input-group">
+                                                        <input type="text" id="closing_balance" name="closing_balance" class="form-control" readonly>
                                                     </div>
                                                 </div>
-
-                                                
-
-                                                <div class="col-xl-12 col-sm-12">
-                                                    <div class="form-group">
-                                                        <label class="form-label">Previous Balance</label>
-                                                        <input type="text" class="form-control" id="previous_balance" name="previous_balance" readonly>
-                                                    </div>
-                                                </div>
-                                                <div class="col-sm-12">
-                                                    <div class="form-group">
-                                                        <label>Closing Balance</label>
-                                                        <div class="input-group">
-                                                            <input type="text" id="closing_balance" name="closing_balance" class="form-control" readonly>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- <div class="col-sm-12">
-                                                    <div class="form-group">
-                                                        <label>Cash Received</label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text">Pkr</span>
-                                                            <input type="number" name="cash_received" id="cashReceived" class="form-control">
-                                                        </div>
-                                                    </div>
-                                                </div> -->
-                                                
-                                                <!-- Cash Payment Fields End -->
-
                                             </div>
                                         </div>
-
                                     </div>
-
-
-
-
                                     <button type="submit" class="btn btn--primary w-100 h-45">Submit</button>
-
-
                                 </form>
                             </div>
                         </div>
@@ -270,12 +290,36 @@
 
             // Function to calculate payable amount
             function calculatePayableAmount() {
-                const totalPrice = parseFloat($('.total_price').val()) || 0;
-                const discount = parseFloat($('#discount').val()) || 0;
-                const payableAmount = Math.max(0, totalPrice - discount);
+                function calculatePayableAmount() {
+                    let totalPrice = parseFloat($('.total_price').val()) || 0;
+                    let discount1 = parseFloat($('#discount_1').val()) || 0;
+                    let discount2 = parseFloat($('#discount_2').val()) || 0;
+                    let discount3 = parseFloat($('#discount_3').val()) || 0;
+                    let toValue = parseFloat($('#to_value').val()) || 0;
+                    let toType = $('input[name="to_type"]:checked').val();
 
-                $('.payable_amount').val(payableAmount.toFixed(2));
-                updateClosingBalance(); // Update closing balance
+                    // Apply discounts sequentially
+                    let discountedPrice = totalPrice;
+                    discountedPrice -= (discountedPrice * discount1) / 100;
+                    discountedPrice -= (discountedPrice * discount2) / 100;
+                    discountedPrice -= (discountedPrice * discount3) / 100;
+
+                    // Apply TO Calculation
+                    if (toType === 'percentage') {
+                        discountedPrice -= (discountedPrice * toValue) / 100;
+                    } else {
+                        discountedPrice -= toValue;
+                    }
+
+                    // Set the value with 2 decimal places
+                    $('.payable_amount').val(discountedPrice.toFixed(2));
+                    updateClosingBalance();
+                }
+
+
+                // Trigger calculation on input change
+                $('#discount_1, #discount_2, #discount_3, #to_value').on('input', calculatePayableAmount);
+                $('input[name="to_type"]').on('change', calculatePayableAmount);
             }
 
             // Function to update closing balance

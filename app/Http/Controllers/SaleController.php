@@ -16,15 +16,19 @@ use Barryvdh\DomPDF\Facade\Pdf; // If using barryvdh/laravel-dompdf
 class SaleController extends Controller
 {
 
-    public function Sale()
+
+    public function all_sales()
     {
+
         if (Auth::id()) {
             $userId = Auth::id();
-            // dd($userId);
-            $Purchases = Purchase::get();
-            // dd($Purchases);
+            $usertype = Auth()->user()->usertype;
+
+            // Retrieve all Sales with their related Purchase data (including invoice_no)
+            $Sales = Sale::where('userid', $userId)->where('user_type', $usertype)->get();
+            // dd($Sales);
             return view('admin_panel.sale.sales', [
-                'Purchases' => $Purchases,
+                'Sales' => $Sales,
             ]);
         } else {
             return redirect()->back();
@@ -77,20 +81,52 @@ class SaleController extends Controller
 
     public function store_Sale(Request $request)
     {
+        // dd($request);
         $invoiceNo = Sale::generateInvoiceNo();
         \Log::info('Request Data:', $request->all());
 
-        $discount = (float)($request->input('discount', 0));
-        $totalPrice = (float)$request->input('total_price', 0);
-        $cashReceived = (float)$request->input('cash_received', 0);
-        $changeToReturn = (float)$request->input('change_to_return', 0);
+        $totalPrice = (float) $request->input('total_price', 0);
+        $cashReceived = (float) $request->input('cash_received', 0);
+        $changeToReturn = (float) $request->input('change_to_return', 0);
+
+        // New Discounts
+        $discount1 = (int) $request->input('discount_1', 0); // Percentage
+        $discount2 = (int) $request->input('discount_2', 0); // Percentage
+        $discount3 = (int) $request->input('discount_3', 0); // Percentage
+
+        // TO Calculation
+        $toType = $request->input('to_type');  // 'percentage' or 'rupees'
+        $toValue = (int) $request->input('to_value', 0); // Ensure integer
+
+        $totalPrice = 1600; // Assuming input
+        $cashReceived = 0; // Dummy value
+        $changeToReturn = 0; // Dummy value
 
         \Log::info('Processed Values:', [
-            'discount' => $discount,
+            'discount_1' => $discount1,
+            'discount_2' => $discount2,
+            'discount_3' => $discount3,
+            'to_type' => $toType,
+            'to_value' => $toValue,
             'total_price' => $totalPrice,
             'cash_received' => $cashReceived,
             'change_to_return' => $changeToReturn,
         ]);
+
+        // Step 1: Apply percentage-based discounts (rounded down)
+        $discountedTotal = floor($totalPrice - ($totalPrice * ($discount1 / 100))); // First Discount
+        $discountedTotal = floor($discountedTotal - ($discountedTotal * ($discount2 / 100))); // Second Discount
+        $discountedTotal = floor($discountedTotal - ($discountedTotal * ($discount3 / 100))); // Third Discount
+
+        // Step 2: Apply TO value
+        if ($toType == 'percentage') {
+            $finalAmount = floor($discountedTotal - ($discountedTotal * ($toValue / 100)));
+        } else {
+            $finalAmount = $discountedTotal - $toValue;
+        }
+
+
+        \Log::info('Final Amount after Discounts and TO:', ['final_amount' => $finalAmount]);
 
         $usertype = Auth()->user()->usertype;
         $userId = Auth::id();
@@ -123,49 +159,75 @@ class SaleController extends Controller
             return redirect()->back()->with('error', 'Invalid customer information format.');
         }
 
+
         $customerId = $customerInfo[0];
         $customerName = $customerInfo[1];
-        // Prepare data for storage
-        $discount = (float) ($request->input('discount', 0));
-        $totalPrice = (float) $request->input('total_price', 0);
-        $netTotal = $totalPrice - $discount; // Calculate the net total amount
 
-        // Get the existing customer credit to retrieve previous balance
+        // Get total price
+        $totalPrice = (float) $request->input('total_price', 0);
+        $discount1 = (float) $request->input('discount_1', 0);
+        $discount2 = (float) $request->input('discount_2', 0);
+        $discount3 = (float) $request->input('discount_3', 0);
+
+        // TO Calculation
+        $toType = $request->input('to_type');  // 'percentage' or 'rupees'
+        $toValue = (float) $request->input('to_value', 0);
+        // Step 1: Calculate total discount sequentially
+        $discountedTotal = $totalPrice;
+        $discountedTotal -= ($discountedTotal * $discount1) / 100;
+        $discountedTotal -= ($discountedTotal * $discount2) / 100;
+        $discountedTotal -= ($discountedTotal * $discount3) / 100;
+
+        // Step 2: Apply TO value
+        if ($toType == 'percentage') {
+            $finalAmount = $discountedTotal - ($discountedTotal * $toValue / 100);
+        } else {
+            $finalAmount = $discountedTotal - $toValue;
+        }
+
+        // Round to 2 decimal places
+        $netTotal = round($finalAmount, 2);
+
+        // Get existing customer credit
         $customerCredit = CustomerCredit::where('customerId', $customerId)->first();
 
+        $previousBalance = 0;
+        $closingBalance = 0;
         $previous_balance = $request->input('previous_balance');
         $net_total = $request->input('net_total');
         $closing_balance = $request->input('closing_balance');
+
         // Initialize variables to hold balance details
         $previousBalance = 0;
         $closingBalance = 0;
 
         if ($customerCredit) {
-            // If customer credit exists, get the previous balance
-            $previousBalance = $customerCredit->previous_balance;
+            // Get last closing balance
+            $previousBalance = $customerCredit->closing_balance;
 
-            // Update previous balance to include the new sale's payable amount
+            // Calculate new closing balance (same as previous_balance)
             $closingBalance = $previousBalance + $netTotal;
 
-            // Update existing credit
-            $customerCredit->net_total = $netTotal; // Store the net total from the current sale
-            $customerCredit->closing_balance = $closingBalance; // Closing balance is now the updated previous balance
-            $customerCredit->previous_balance = $closingBalance; // Update to the new previous balance
-            $customerCredit->save();
+            // Update existing customer credit (both values same)
+            $customerCredit->update([
+                'net_total' => $netTotal,
+                'previous_balance' => $closingBalance, // Maintain same as closing balance
+                'closing_balance' => $closingBalance,  // Maintain same as previous balance
+            ]);
         } else {
-            // Create new credit entry for the customer
+            // Create new customer credit entry
             CustomerCredit::create([
                 'customerId' => $customerId,
                 'customer_name' => $customerName,
-                'previous_balance' => $netTotal, // Set previous balance to the net total for the first sale
-                'net_total' => $netTotal, // This is the first sale's amount
-                'closing_balance' => $netTotal, // Closing balance for first entry
+                'previous_balance' => $netTotal, // First entry, so no previous balance
+                'net_total' => $netTotal,
+                'closing_balance' => $netTotal,
             ]);
 
-            // Set the balances for the first entry
-            $previousBalance = 0; // No previous balance exists for new customers
-            $closingBalance = $netTotal; // This will be the closing balance
+            $previousBalance = 0;
+            $closingBalance = $netTotal;
         }
+
 
         // Step 2: Proceed to save the sale
         $saleData = [
@@ -183,10 +245,12 @@ class SaleController extends Controller
             'total' => json_encode($request->input('total', [])),
             'note' => $request->input('note', ''),
             'total_price' => $totalPrice,
-            'discount' => $discount,
-            'Payable_amount' => $totalPrice - $discount,
-            'cash_received' => $cashReceived,
-            'change_return' => $changeToReturn,
+            'discount_1' => $discount1,
+            'discount_2' => $discount2,
+            'discount_3' => $discount3,
+            'to_type' => $toType,
+            'to_value' => $toValue,
+            'Payable_amount' => $finalAmount, // Correct payable amount
         ];
 
         $sale = Sale::create($saleData);
@@ -214,6 +278,335 @@ class SaleController extends Controller
         ])
             ->with('success', 'Sale recorded successfully. Redirecting to receipt...');
     }
+
+
+    // public function store_Sale(Request $request)
+    // {
+    //     // dd($request);
+    //     $invoiceNo = Sale::generateInvoiceNo();
+    //     \Log::info('Request Data:', $request->all());
+
+    //     $totalPrice = (float) $request->input('total_price', 0);
+    //     $cashReceived = (float) $request->input('cash_received', 0);
+    //     $changeToReturn = (float) $request->input('change_to_return', 0);
+
+    //     // New Discounts
+    //     $discount1 = (float) $request->input('discount_1', 0);
+    //     $discount2 = (float) $request->input('discount_2', 0);
+    //     $discount3 = (float) $request->input('discount_3', 0);
+
+    //     // TO Calculation
+    //     $toType = $request->input('to_type');  // 'percentage' or 'rupees'
+    //     $toValue = (float) $request->input('to_value', 0);
+
+    //     \Log::info('Processed Values:', [
+    //         'discount_1' => $discount1,
+    //         'discount_2' => $discount2,
+    //         'discount_3' => $discount3,
+    //         'to_type' => $toType,
+    //         'to_value' => $toValue,
+    //         'total_price' => $totalPrice,
+    //         'cash_received' => $cashReceived,
+    //         'change_to_return' => $changeToReturn,
+    //     ]);
+
+    //     $usertype = Auth()->user()->usertype;
+    //     $userId = Auth::id();
+    //     // Step 1: Calculate total discount after applying each discount
+    //     $discountedTotal = $totalPrice - $discount1;
+    //     $discountedTotal = $discountedTotal - ($discountedTotal * ($discount2 / 100));
+    //     $discountedTotal = $discountedTotal - ($discountedTotal * ($discount3 / 100));
+
+    //     // Step 2: Apply TO value
+    //     if ($toType == 'percentage') {
+    //         $finalAmount = $discountedTotal - ($discountedTotal * ($toValue / 100));
+    //     } else {
+    //         $finalAmount = $discountedTotal - $toValue;
+    //     }
+
+    //     \Log::info('Final Amount after Discounts and TO:', ['final_amount' => $finalAmount]);
+
+
+    //     $itemNames = $request->input('item_name', []);
+    //     $itemCategories = $request->input('item_category', []);
+    //     $quantities = $request->input('quantity', []);
+
+    //     // Step 1: Validate stock for all products
+    //     foreach ($itemNames as $key => $item_name) {
+    //         $item_category = $itemCategories[$key] ?? '';
+    //         $quantity = $quantities[$key] ?? 0;
+
+    //         $product = Product::where('product_name', $item_name)
+    //             ->where('category', $item_category)
+    //             ->first();
+
+    //         if (!$product) {
+    //             return redirect()->back()->with('error', "Product $item_name in category $item_category not found.");
+    //         }
+
+    //         if ($product->stock < $quantity) {
+    //             return redirect()->back()->with('error', "Insufficient stock for product $item_name. Available: {$product->stock}, Required: $quantity.");
+    //         }
+    //     }
+
+    //     // Get customer info from the concatenated string
+    //     $customerInfo = explode('|', $request->input('customer_info'));
+    //     if (count($customerInfo) < 2) {
+    //         return redirect()->back()->with('error', 'Invalid customer information format.');
+    //     }
+
+    //     $customerId = $customerInfo[0];
+    //     $customerName = $customerInfo[1];
+
+    //     // Calculate Net Total with Discounts
+    //     $netTotal = $totalPrice - ($discount1 + $discount2 + $discount3);
+
+    //     // Get the existing customer credit to retrieve previous balance
+    //     $customerCredit = CustomerCredit::where('customerId', $customerId)->first();
+
+    //     $previous_balance = $request->input('previous_balance');
+    //     $net_total = $request->input('net_total');
+    //     $closing_balance = $request->input('closing_balance');
+
+    //     // Initialize variables to hold balance details
+    //     $previousBalance = 0;
+    //     $closingBalance = 0;
+
+    //     if ($customerCredit) {
+    //         // If customer credit exists, get the previous balance
+    //         $previousBalance = $customerCredit->previous_balance;
+
+    //         // Update previous balance to include the new sale's payable amount
+    //         $closingBalance = $previousBalance + $netTotal;
+
+    //         // Update existing credit
+    //         $customerCredit->net_total = $netTotal; // Store the net total from the current sale
+    //         $customerCredit->closing_balance = $closingBalance; // Closing balance is now the updated previous balance
+    //         $customerCredit->previous_balance = $closingBalance; // Update to the new previous balance
+    //         $customerCredit->save();
+    //     } else {
+    //         // Create new credit entry for the customer
+    //         CustomerCredit::create([
+    //             'customerId' => $customerId,
+    //             'customer_name' => $customerName,
+    //             'previous_balance' => $netTotal, // Set previous balance to the net total for the first sale
+    //             'net_total' => $netTotal, // This is the first sale's amount
+    //             'closing_balance' => $netTotal, // Closing balance for first entry
+    //         ]);
+
+    //         // Set the balances for the first entry
+    //         $previousBalance = 0; // No previous balance exists for new customers
+    //         $closingBalance = $netTotal; // This will be the closing balance
+    //     }
+
+    //     // Step 2: Proceed to save the sale
+    //     $saleData = [
+    //         'userid' => $userId,
+    //         'user_type' => $usertype,
+    //         'invoice_no' => $invoiceNo,
+    //         'customerId' => $customerId,
+    //         'customer' => $customerName,
+    //         'sale_date' => $request->input('sale_date', ''),
+    //         'warehouse_id' => $request->input('warehouse_id', ''),
+    //         'item_category' => json_encode($request->input('item_category', [])),
+    //         'item_name' => json_encode($request->input('item_name', [])),
+    //         'quantity' => json_encode($request->input('quantity', [])),
+    //         'price' => json_encode($request->input('price', [])),
+    //         'total' => json_encode($request->input('total', [])),
+    //         'note' => $request->input('note', ''),
+    //         'total_price' => $totalPrice,
+    //         'discount_1' => $discount1,
+    //         'discount_2' => $discount2,
+    //         'discount_3' => $discount3,
+    //         'to_type' => $toType,
+    //         'to_value' => $toValue,
+    //         'Payable_amount' => $finalAmount, // Correct payable amount
+    //         'cash_received' => $cashReceived,
+    //         'change_return' => $changeToReturn,
+    //     ];
+
+    //     $sale = Sale::create($saleData);
+
+    //     // Step 3: Deduct stock after successfully saving the sale
+    //     foreach ($itemNames as $key => $item_name) {
+    //         $item_category = $itemCategories[$key] ?? '';
+    //         $quantity = $quantities[$key] ?? 0;
+
+    //         $product = Product::where('product_name', $item_name)
+    //             ->where('category', $item_category)
+    //             ->first();
+
+    //         if ($product) {
+    //             $product->stock -= $quantity;
+    //             $product->save();
+    //         }
+    //     }
+
+    //     return redirect()->route('sale-receipt', [
+    //         'id' => $sale->id,
+    //         'previous_balance' => $previousBalance, // Ensure this is the correct variable name
+    //         'closing_balance' => $closingBalance, // Ensure this is the correct variable name
+    //         'net_total' => $netTotal // Include this if needed
+    //     ])
+    //         ->with('success', 'Sale recorded successfully. Redirecting to receipt...');
+    // }
+
+
+
+    // public function store_Sale(Request $request)
+    // {   
+    //     $invoiceNo = Sale::generateInvoiceNo();
+    //     \Log::info('Request Data:', $request->all());
+
+    //     $totalPrice = (float) $request->input('total_price', 0);
+    //     $cashReceived = (float) $request->input('cash_received', 0);
+    //     $changeToReturn = (float) $request->input('change_to_return', 0);
+
+    //     // New Discounts
+    //     $discount1 = (float) $request->input('discount_1', 0);
+    //     $discount2 = (float) $request->input('discount_2', 0);
+    //     $discount3 = (float) $request->input('discount_3', 0);
+
+    //     // TO Calculation
+    //     $toType = $request->input('to_type');  // 'percentage' or 'rupees'
+    //     $toValue = (float) $request->input('to_value', 0);
+
+    //     \Log::info('Processed Values:', [
+    //         'discount_1' => $discount1,
+    //         'discount_2' => $discount2,
+    //         'discount_3' => $discount3,
+    //         'to_type' => $toType,
+    //         'to_value' => $toValue,
+    //         'total_price' => $totalPrice,
+    //         'cash_received' => $cashReceived,
+    //         'change_to_return' => $changeToReturn,
+    //     ]);
+
+    //     $usertype = Auth()->user()->usertype;
+    //     $userId = Auth::id();
+
+    //     $itemNames = $request->input('item_name', []);
+    //     $itemCategories = $request->input('item_category', []);
+    //     $quantities = $request->input('quantity', []);
+
+    //     // Step 1: Validate stock for all products
+    //     foreach ($itemNames as $key => $item_name) {
+    //         $item_category = $itemCategories[$key] ?? '';
+    //         $quantity = $quantities[$key] ?? 0;
+
+    //         $product = Product::where('product_name', $item_name)
+    //             ->where('category', $item_category)
+    //             ->first();
+
+    //         if (!$product) {
+    //             return redirect()->back()->with('error', "Product $item_name in category $item_category not found.");
+    //         }
+
+    //         if ($product->stock < $quantity) {
+    //             return redirect()->back()->with('error', "Insufficient stock for product $item_name. Available: {$product->stock}, Required: $quantity.");
+    //         }
+    //     }
+
+    //     // Get customer info from the concatenated string
+    //     $customerInfo = explode('|', $request->input('customer_info'));
+    //     if (count($customerInfo) < 2) {
+    //         return redirect()->back()->with('error', 'Invalid customer information format.');
+    //     }
+
+    //     $customerId = $customerInfo[0];
+    //     $customerName = $customerInfo[1];
+    //     // Prepare data for storage
+    //     // Calculate Net Total with Discounts
+    //     $netTotal = $totalPrice - ($discount1 + $discount2 + $discount3);
+
+    //     // Get the existing customer credit to retrieve previous balance
+    //     $customerCredit = CustomerCredit::where('customerId', $customerId)->first();
+
+    //     $previous_balance = $request->input('previous_balance');
+    //     $net_total = $request->input('net_total');
+    //     $closing_balance = $request->input('closing_balance');
+    //     // Initialize variables to hold balance details
+    //     $previousBalance = 0;
+    //     $closingBalance = 0;
+
+    //     if ($customerCredit) {
+    //         // If customer credit exists, get the previous balance
+    //         $previousBalance = $customerCredit->previous_balance;
+
+    //         // Update previous balance to include the new sale's payable amount
+    //         $closingBalance = $previousBalance + $netTotal;
+
+    //         // Update existing credit
+    //         $customerCredit->net_total = $netTotal; // Store the net total from the current sale
+    //         $customerCredit->closing_balance = $closingBalance; // Closing balance is now the updated previous balance
+    //         $customerCredit->previous_balance = $closingBalance; // Update to the new previous balance
+    //         $customerCredit->save();
+    //     } else {
+    //         // Create new credit entry for the customer
+    //         CustomerCredit::create([
+    //             'customerId' => $customerId,
+    //             'customer_name' => $customerName,
+    //             'previous_balance' => $netTotal, // Set previous balance to the net total for the first sale
+    //             'net_total' => $netTotal, // This is the first sale's amount
+    //             'closing_balance' => $netTotal, // Closing balance for first entry
+    //         ]);
+
+    //         // Set the balances for the first entry
+    //         $previousBalance = 0; // No previous balance exists for new customers
+    //         $closingBalance = $netTotal; // This will be the closing balance
+    //     }
+
+    //     // Step 2: Proceed to save the sale
+    //     $saleData = [
+    //         'userid' => $userId,
+    //         'user_type' => $usertype,
+    //         'invoice_no' => $invoiceNo,
+    //         'customerId' => $customerId,
+    //         'customer' => $customerName,
+    //         'sale_date' => $request->input('sale_date', ''),
+    //         'warehouse_id' => $request->input('warehouse_id', ''),
+    //         'item_category' => json_encode($request->input('item_category', [])),
+    //         'item_name' => json_encode($request->input('item_name', [])),
+    //         'quantity' => json_encode($request->input('quantity', [])),
+    //         'price' => json_encode($request->input('price', [])),
+    //         'total' => json_encode($request->input('total', [])),
+    //         'note' => $request->input('note', ''),
+    //         'total_price' => $totalPrice,
+    //         'discount_1' => $discount1,
+    //         'discount_2' => $discount2,
+    //         'discount_3' => $discount3,
+    //         'to_type' => $toType,
+    //         'to_value' => $toValue,
+    //         'Payable_amount' => $netTotal,
+    //         'cash_received' => $cashReceived,
+    //         'change_return' => $changeToReturn,
+    //     ];
+
+    //     $sale = Sale::create($saleData);
+
+    //     // Step 3: Deduct stock after successfully saving the sale
+    //     foreach ($itemNames as $key => $item_name) {
+    //         $item_category = $itemCategories[$key] ?? '';
+    //         $quantity = $quantities[$key] ?? 0;
+
+    //         $product = Product::where('product_name', $item_name)
+    //             ->where('category', $item_category)
+    //             ->first();
+
+    //         if ($product) {
+    //             $product->stock -= $quantity;
+    //             $product->save();
+    //         }
+    //     }
+
+    //     return redirect()->route('sale-receipt', [
+    //         'id' => $sale->id,
+    //         'previous_balance' => $previousBalance, // Ensure this is the correct variable name
+    //         'closing_balance' => $closingBalance, // Ensure this is the correct variable name
+    //         'net_total' => $netTotal // Include this if needed
+    //     ])
+    //         ->with('success', 'Sale recorded successfully. Redirecting to receipt...');
+    // }
 
 
 
@@ -340,23 +733,7 @@ class SaleController extends Controller
     // }
 
 
-    public function all_sales()
-    {
-
-        if (Auth::id()) {
-            $userId = Auth::id();
-            $usertype = Auth()->user()->usertype;
-
-            // Retrieve all Sales with their related Purchase data (including invoice_no)
-            $Sales = Sale::where('userid', $userId)->where('user_type', $usertype)->get();
-            // dd($Sales);
-            return view('admin_panel.sale.sales', [
-                'Sales' => $Sales,
-            ]);
-        } else {
-            return redirect()->back();
-        }
-    }
+    
 
     public function get_customer_amount($id)
     {
