@@ -29,14 +29,16 @@
                         <div class="card b-radius--10 bg--transparent">
                             <div class="card-body p-0 ">
                                 <div class="table-responsive--md table-responsive">
-                                    <table id="example" class="display  table table--light style--two bg--white" style="width:100%">
+                                    <table id="example" class="display table table--light style--two bg--white" style="width:100%">
                                         <thead>
                                             <tr>
                                                 <th>Invoice No. | Date</th>
-                                                <th>Customer | Warehouse </th>
-                                                <th>Total Amount </th>
-                                                <th>Payable </th>
-                                                <!-- <th>Recipt </th> -->
+                                                <th>Customer | Warehouse</th>
+                                                <th>Net Amount</th>
+                                                <th>13% Discount & After Discount</th>
+                                                <th>2% Discount & After Discount</th>
+                                                <th>Bonus Scheme</th>
+                                                <th>Total Amount</th>
                                                 <th>Action</th>
                                             </tr>
                                         </thead>
@@ -44,46 +46,63 @@
                                             @foreach($Sales as $Sale)
                                             <tr>
                                                 <td>
-                                                    <span class="fw-bold">
-                                                        {{ $Sale->invoice_no }}
-                                                    </span>
+                                                    <span class="fw-bold">{{ $Sale->invoice_no }}</span>
                                                     <br>
                                                     <small>{{ $Sale->sale_date }}</small>
                                                 </td>
 
                                                 <td>
-                                                    <span class="text--primary fw-bold"> {{ $Sale->customer}} <br>
-                                                        {{ $Sale->warehouse_id }} </span>
+                                                    <span class="text--primary fw-bold">
+                                                        {{ $Sale->customer }} <br>
+                                                        {{ $Sale->warehouse_id }}
+                                                    </span>
                                                 </td>
 
                                                 <td>
-                                                    <span class="fw-bold">{{ $Sale->total_price }} </span>
+                                                    <span class="fw-bold">{{ $Sale->net_amount }}</span>
+                                                </td>
 
-                                                </td>
                                                 <td>
-                                                    <span class="fw-bold">{{ $Sale->Payable_amount }}</span>
+                                                    <span class="fw-bold">
+                                                        {{ $Sale->discount_13 }}% <br>
+                                                        After Discount: {{ $Sale->after_discount_13 }}
+                                                    </span>
                                                 </td>
-                                              
-                                                <!-- <td>
-                                                    <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="#"> <i class="la la-pen"></i> Edit</a>
-                                                </td> -->
+
+                                                <td>
+                                                    <span class="fw-bold">
+                                                        {{ $Sale->discount_2 }}% <br>
+                                                        After Discount: {{ $Sale->after_discount_2 }}
+                                                    </span>
+                                                </td>
+
+                                                <td>
+                                                    <span class="fw-bold">{{ $Sale->scheme_minus }}</span>
+                                                </td>
+
+                                                <td>
+                                                    <span class="fw-bold">{{ $Sale->total_amount }}</span>
+                                                </td>
                                                 <td>
                                                     <div class="dropdown">
                                                         <button class="btn btn-sm btn-outline--info ms-1 dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                            <i class="la la-ellipsis-v"></i>More
+                                                            <i class="la la-ellipsis-v"></i> More
                                                         </button>
                                                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                                            <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="#"> <i class="la la-pen"></i> Edit</a>
-                                                            <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="{{ route('invoice.download', ['id' => $Sale->id]) }}"> <i class="la la-undo"></i> Download Invoice</a>
-                                                            <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="{{ route('sale-receipt', ['id' => $Sale->id]) }}"> <i class="la la-print"></i> Print Receipt</a> <!-- New Print Receipt Link -->
+                                                            <!-- <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="#">
+                                                                <i class="la la-undo"></i> Download Invoice
+                                                            </a> -->
+                                                            <a class="dropdown-item btn btn-sm btn-outline--primary ms-1 editBtn" href="{{ route('sale-receipt', ['id' => $Sale->id]) }}">
+                                                                <i class="la la-print"></i> Print Receipt
+                                                            </a>
                                                         </div>
                                                     </div>
                                                 </td>
-
                                             </tr>
                                             @endforeach
                                         </tbody>
-                                    </table><!-- table end -->
+                                    </table>
+
                                 </div>
                             </div>
                         </div><!-- card end -->

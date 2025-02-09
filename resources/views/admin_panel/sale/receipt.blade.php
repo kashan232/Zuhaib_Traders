@@ -1,195 +1,201 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cash Memo</title>
+    <title>Sale Receipt</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            font-size: 12px;
-            background-color: #f4f4f4;
+            background-color: #f9f9f9;
         }
 
         .receipt-container {
             width: 100%;
-            max-width: 450px;
-            margin: 20px auto;
+            max-width: 800px;
+            margin: 0 auto;
             padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
+            border: 2px solid #000;
             background-color: #fff;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            page-break-after: always;
         }
 
-        .receipt-header {
+        h2, h4 {
+            margin: 5px 0;
+        }
+
+        .heading {
             text-align: center;
-        }
-
-        .receipt-header img {
-            width: 80px;
+            font-size: 1.5em;
+            font-weight: bold;
             margin-bottom: 10px;
         }
 
-        h2 {
-            font-size: 20px;
-            font-weight: bold;
-            margin: 5px 0;
-            color: #333;
+        .invoice-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
         }
 
-        .receipt-header p {
-            margin: 2px 0;
-            font-size: 12px;
-            color: #555;
+        .invoice-details div {
+            width: 48%;
         }
 
-        .details {
-            margin: 15px 0;
-            line-height: 1.6;
-            font-size: 13px;
+        .invoice-details .left {
+            text-align: left;
         }
 
-        .details p {
-            margin: 4px 0;
-        }
-
-        .details strong {
-            color: #333;
+        .invoice-details .right {
+            text-align: right;
         }
 
         table {
             width: 100%;
-            margin-top: 10px;
-            font-size: 12px;
             border-collapse: collapse;
+            margin-top: 15px;
         }
 
-        th, td {
-            padding: 6px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
+        table, th, td {
+            border: 1px solid #ccc;
+            text-align: center;
+            padding: 10px;
         }
 
         th {
-            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
             background-color: #f9f9f9;
-            color: #333;
         }
 
-        .totals td {
-            font-weight: bold;
-            text-align: right;
+        .highlight {
+            background-color: red;
+            color: white;
         }
 
-        .receipt-footer {
-            text-align: center;
+        .total-section {
             margin-top: 20px;
-            font-size: 12px;
-            color: #555;
+            text-align: right;
+            font-size: 1.1em;
         }
 
-        .note {
-            font-size: 13px;
-            font-weight: bold;
-            color: #d9534f;
-            margin-bottom: 10px;
+        .total-section p {
+            margin: 5px 0;
+        }
+
+        .no-print {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .no-print:hover {
+            background-color: #0056b3;
         }
 
         @media print {
-            body {
-                margin: 0;
+            .no-print {
+                display: none;
+            }
+
+            @page {
+                size: A4;
+                margin: 20mm;
             }
 
             .receipt-container {
-                border: none;
-                box-shadow: none;
-                margin: 0;
-                page-break-inside: avoid;
+                width: 100%;
+                padding: 20px;
+                page-break-after: always;
             }
         }
     </style>
 </head>
 
 <body>
+
     <div class="receipt-container">
-        <!-- Receipt Header -->
-        <div class="receipt-header">
-            <img src="../assets/admin/images/BB_logo.png" alt="Company Logo">
-            <h2>Beauty Base Cosmetics</h2>
-            <p><strong>Cash Memo</strong></p>
-            <p><strong>Address:</strong> Resham Bazar</p>
-            <p><strong>Phone:</strong> 0313-300452-0</p>
+        <div class="heading">
+            HR TRADERS HYDERABAD
+        </div>
+        <div class="invoice-details">
+            <div class="left">
+                <h4>Invoice No: {{ $sale->invoice_no }}</h4>
+                <h4>Customer: {{ $sale->customer }}</h4>
+            </div>
+            <div class="right">
+                <h4>Date: {{ $sale->sale_date }}</h4>
+                <h4>Warehouse: {{ $sale->warehouse_id }}</h4>
+            </div>
         </div>
 
-        <!-- Sale Details -->
-        <div class="details">
-            <p><strong>Memo No:</strong> {{ $sale->invoice_no }}</p>
-            <p><strong>Customer:</strong> {{ $sale->customer }}</p>
-            <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($sale->created_at)->format('F d, Y h:i A') }}</p>
-        </div>
-
-        <!-- Items Table -->
         <table>
             <thead>
                 <tr>
-                    <th>Description</th>
-                    <th>Qty</th>
-                    <th>Rate</th>
-                    <th>Total</th>
+                    <th>S.No</th>
+                    <th>Product Name</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Gross Amount</th>
+                    <th>Disc. 14%</th>
+                    <th>After Disc. 14%</th>
+                    <th>Disc. 7%</th>
+                    <th>After Disc. 7%</th>
+                    <th class="highlight">Final Amount</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach(json_decode($sale->item_name) as $key => $item)
+                @php
+                $items = json_decode($sale->item_name, true) ?? [];
+                $quantities = json_decode($sale->quantity, true) ?? [];
+                $prices = json_decode($sale->price, true) ?? [];
+                $grossAmounts = json_decode($sale->gross_amount, true) ?? [];
+                $discount14 = json_decode($sale->discount_14, true) ?? [];
+                $after14 = json_decode($sale->after_14, true) ?? [];
+                $discount7 = json_decode($sale->discount_7, true) ?? [];
+                $after7 = json_decode($sale->after_7, true) ?? [];
+                $finalTotals = json_decode($sale->final_total, true) ?? [];
+                @endphp
+
+                @foreach ($items as $key => $product)
                 <tr>
-                    <td>{{ $item }}</td>
-                    <td>{{ json_decode($sale->quantity)[$key] }}</td>
-                    <td>{{ number_format(json_decode($sale->price)[$key], 0) }}</td>
-                    <td>{{ number_format(json_decode($sale->total)[$key], 0) }}</td>
+                    <td>{{ $key + 1 }}</td>
+                    <td>{{ $product }}</td>
+                    <td>{{ $quantities[$key] ?? 0 }}</td>
+                    <td>{{ $prices[$key] ?? 0 }}</td>
+                    <td>{{ $grossAmounts[$key] ?? 0 }}</td>
+                    <td>{{ $discount14[$key] ?? 0 }}</td>
+                    <td>{{ $after14[$key] ?? 0 }}</td>
+                    <td>{{ $discount7[$key] ?? 0 }}</td>
+                    <td>{{ $after7[$key] ?? 0 }}</td>
+                    <td>{{ $finalTotals[$key] ?? 0 }}</td>
                 </tr>
                 @endforeach
             </tbody>
-            <tfoot>
-                <tr class="totals">
-                    <td colspan="3">Total Amount</td>
-                    <td>{{ $sale->total_price }}</td>
-                </tr>
-                <tr class="totals">
-                    <td colspan="3">Net Total</td>
-                    <td><strong>{{ $sale->Payable_amount }}</strong></td>
-                </tr>
-                <tr class="totals">
-                    <td colspan="3">Previous Balance</td>
-                    <td>{{ $previous_balance }}</td>
-                </tr>
-                <tr class="totals">
-                    <td colspan="3">Closing Balance</td>
-                    <td>{{ $closing_balance }}</td>
-                </tr>
-               
-            </tfoot>
         </table>
 
-        <!-- Footer Message -->
-        <div class="receipt-footer">
-            <p class="note">Goods Once Sold Are Not Returnable</p>
-            <p>Thank you for your purchase!</p>
-            <p>Designed & Developed by ProWave Software Solution</p>
-            <p><strong>0317-3836223 | 0317-3859647</strong></p>
+        <div class="total-section">
+            <p><strong>Net Amount:</strong> {{ $netTotal }}</p>
+            <p><strong>Discount 13%:</strong> {{ $sale->discount_13 }} | After Discount: {{ $sale->after_discount_13 }}</p>
+            <p><strong>Discount 2%:</strong> {{ $sale->discount_2 }} | After Discount: {{ $sale->after_discount_2 }}</p>
+            <p><strong>Bonus Scheme:</strong> {{ $sale->scheme_minus }}</p>
+            <p><strong>Total Amount:</strong> {{ $sale->total_amount }}</p>
+            <p><strong>Previous Balance:</strong> {{ $previousBalance }}</p>
+            <p><strong>Closing Balance:</strong> {{ $closingBalance }}</p>
         </div>
+
+        <div style="width: 100%;">
+            <p style="text-align: center; font-size: 0.9em; color: #888;">Designed & Developed by ProWave Software Solution</p>
+        </div>
+        <button class="no-print" onclick="window.print()">Print Receipt</button>
     </div>
 
-    <script>
-        window.onload = function () {
-            window.print();
-            setTimeout(function () {
-                window.location.href = "{{ route('all-sales') }}";
-            }, 1000);
-        };
-    </script>
 </body>
 
 </html>
